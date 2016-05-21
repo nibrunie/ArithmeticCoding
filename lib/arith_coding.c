@@ -130,19 +130,20 @@ unsigned char* output_digit(unsigned char* out, ac_state_t* state, int digit)
  * @p out byte array to be displayed
  * @p size number of bits from @p out to display
  */
-void display_bin(unsigned char* out, int bit_size) {
+void display_bin(unsigned char* out, int bit_size) 
+{
   int i;
   printf("bin_value=0.");
   for (i = 0; i < bit_size; ++i) printf("%01d", get_bit_value(out, i));
   printf("\n");
 }
 
-
 /** Process the step of carry propagation without an AC output stream
  *  @p out byte-array used as AC output stream
  *  @p state AC structure containing output parameters
  */
-void propagate_carry(unsigned char* out, ac_state_t* state) {
+void propagate_carry(unsigned char* out, ac_state_t* state) 
+{
   int index = state->out_index - 1;
   while (get_bit_value(out, index) == 1) {
     set_bit_value(out, index, 0);
@@ -165,10 +166,17 @@ int state_half_length(ac_state_t* state)
  * @p value input value
  * @p return (value % 1.0) in fixed-point system defined by @p state
  */
-int modulo_precision(ac_state_t* state, int value) {
+int modulo_precision(ac_state_t* state, int value) 
+{
   return value % (1 << state->frac_size);
 }
 
+/** Arithmetic Coding of one byte 
+ *  @p out byte array to be used as output stream
+ *  @p in  byte to be coded
+ *  @p state Arithmetic Coder state
+ *  @return unused
+ */
 unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state) 
 {
   int in_prob    = state->prob_table[in];
@@ -214,7 +222,29 @@ unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t
   //DISPLAY_VALUE("end base", state, state->base);
   //DISPLAY_VALUE("end length", state, state->length);
   //display_bin(out, state->out_index);
+}
 
+void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state) 
+{
+  int i;
+  
+  // encoding each character
+  for (i = 0; i < size; ++i) encode_character(out, in[i], state);
+
+  // code value selection (flushing buffer)
+
+  int base = state->base;
+  int new_base = modulo_precision(state, state->base + state_half_length(state) / 2);
+  int new_length = (1 << (state->frac_size - 2)) - 1;
+  if (base > new_base) propagate_carry(out, state);
+
+  // renormalization (output two symbols)
+  while (new_length < state_half_length(state)) {
+    int digit = (new_base * 2) >> state->frac_size;
+    output_digit(out, state, digit);
+    new_length = modulo_precision(state, 2 * new_length);
+    new_base   = modulo_precision(state, 2 * new_base);
+  }
 }
 
 void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size) 

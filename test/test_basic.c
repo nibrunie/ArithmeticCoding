@@ -29,8 +29,7 @@ int main(void)
 
   // computing arithmetic coding of input
   printf("encoding\n");
-  int i;
-  for (i = 0; i < sizeof(input); ++i) encode_character(output, input[i], &encoder_state);
+  encode_value(output, input, sizeof(input), &encoder_state);
 
   int compressed_size = (encoder_state.out_index + 7) / 8;
   double ratio = compressed_size / (double) sizeof(input);

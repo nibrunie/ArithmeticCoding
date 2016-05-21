@@ -44,13 +44,14 @@ void build_probability_table(ac_state_t* state, unsigned char* in, int size);
 /** Display the probability table of @p state */
 void display_prob_table(ac_state_t* state); 
 
-/** Arithmetic Coding of one byte 
- *  @p out byte array to be used as output stream
- *  @p in  byte to be coded
- *  @p state Arithmetic Coder state
- *  @return unused
+/** Arithmetic coding of a byte-array 
+ *  @p out byte-array used as output stream
+ *  @p in input byte-array
+ *  @p size number of bytes in @p in
+ *  @p state arithmetic coder state and parameters
  */
-unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state); 
+void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state); 
+
 /** Arithmetic decode the value in @p in according to the encoder defined by @p state, assuming @p 
  *  expected_size characters should be decoded, writting them to @p out
  */

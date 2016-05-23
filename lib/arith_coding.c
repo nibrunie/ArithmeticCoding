@@ -24,23 +24,56 @@ void init_state(ac_state_t* state, int precision) {
   assert(state->prob_table && state->cumul_table && "memeory allocation failed");
 }
 
+void transform_count_to_cumul(ac_state_t* state, int size) {
+  int alphabet_size = 256;
+  int i;
+
+  for (i = 0; i < 256; ++i) {
+    int count = state->prob_table[i];
+    state->prob_table[i] = ((long long) count * (1 << state->frac_size)) / (size + alphabet_size);
+    //if (i == 0) state->cumul_table[0] = state->prob_table[0];
+    //else state->cumul_table[i] = state->cumul_table[i-1] + state->prob_table[i];
+    if (i == 0) {
+      state->cumul_table[0] = 0;
+      state->cumul_table[1] = state->prob_table[0];
+    }
+    else state->cumul_table[i+1] = state->cumul_table[i] + state->prob_table[i];
+  }
+}
+
 void build_probability_table(ac_state_t* state, unsigned char* in, int size) 
 {
   int alphabet_size = 256;
+  int count_weight = 16;
   int i;
   // reset 
   for (i = 0; i < 256; ++i) state->prob_table[i] = 1;
 
   // occurences counting
-  for (i = 0; i < size; ++i) state->prob_table[in[i]]++;
-
+  for (i = 0; i < size; ++i) state->prob_table[in[i]] += count_weight;
 
   // normalization according to state format
+  transform_count_to_cumul(state, count_weight * size);
+  display_prob_table(state);
+
+}
+
+void reset_uniform_probability(ac_state_t* state)
+{
+  int alphabet_size = 256;
+  int size = 0;
+  int i;
+
+  for (i = 0; i < 256; ++i) state->prob_table[i] = 1;
+
   for (i = 0; i < 256; ++i) {
     int count = state->prob_table[i];
     state->prob_table[i] = ((long long) count * (1 << state->frac_size)) / (size + alphabet_size);
-    if (i == 0) state->cumul_table[0] = state->prob_table[0];
-    else state->cumul_table[i] = state->cumul_table[i-1] + state->prob_table[i];
+    if (i == 0) {
+      state->cumul_table[0] = 0;
+      state->cumul_table[1] = state->prob_table[0];
+    }
+    else state->cumul_table[i+1] = state->cumul_table[i] + state->prob_table[i];
   }
 }
 
@@ -49,7 +82,7 @@ void display_prob_table(ac_state_t* state)
   int i;
   double norm = (double) (1 << state->frac_size);
   for (i = 0; i < 256; i++) {
-    printf("P[%i]=%.3f, C[%i]=%.3f\n", i, state->prob_table[i] / norm, i, state->cumul_table[i] / norm); 
+    printf("P[%i]=%.6f, C[%i]=%.6f\n", i, state->prob_table[i] / norm, i, state->cumul_table[i] / norm); 
   }
 }
 
@@ -179,7 +212,6 @@ int modulo_precision(ac_state_t* state, int value)
  */
 unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state) 
 {
-  int in_prob    = state->prob_table[in];
   int in_cumul   = state->cumul_table[in];
 
   // DISPLAY_VALUE("begin base", state, state->base);
@@ -224,6 +256,45 @@ unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t
   //display_bin(out, state->out_index);
 }
 
+unsigned char decode_character( unsigned char* in, ac_state_t* state) 
+{
+  // input value
+  int length = state->length;
+  int V      = state->base;
+  int t      = state->out_index;
+
+  // interval selection
+  int s = 0, n = 256, X = 0, Y = length;
+  while (n - s > 1) {
+    int m = (s + n) / 2;
+    int Z = ((long long) length * state->cumul_table[m]) >> state->frac_size;
+    //DISPLAY_VALUE("  Z", state, Z);
+
+    if (Z > V) { n = m; Y = Z;}
+    else { s = m; X = Z;};
+  }
+  V = V - X;
+  length = Y - X;
+
+  // printf("decoded %d/%c\n", s, s);
+
+  while (length < state_half_length(state)) {
+    // renormalization
+    t++;
+    V = modulo_precision(state, 2 * V) + get_bit_value(in, t);
+    length = modulo_precision(state, 2 * length);
+  }
+  //DISPLAY_VALUE("new V", state, V);
+  //DISPLAY_VALUE("length", state, length);
+
+  //output
+  state->length    = length;
+  state->base      = V;
+  state->out_index = t;
+
+  return s;
+}
+
 void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state) 
 {
   int i;
@@ -262,32 +333,104 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
   DISPLAY_VALUE("init V", state, V);
   DISPLAY_VALUE("init length", state, length);
 
+  state->out_index = t;
+  state->base      = V;
+  state->length    = length;
+
   int i;
   for (i = 0; i < expected_size; ++i) {
-    // interval selection
-    int s = 0, n = 256, X = 0, Y = length;
-    while (n - s > 1) {
-      int m = (s + n) / 2;
-      int Z = ((long long) length * state->cumul_table[m]) >> state->frac_size;
-      //DISPLAY_VALUE("  Z", state, Z);
-
-      if (Z > V) { n = m; Y = Z;}
-      else { s = m; X = Z;};
-    }
-    V = V - X;
-    length = Y - X;
-
     // printf("decoded %d/%c\n", s, s);
-    *(out++) = s;
+    *(out++) = decode_character(in, state);
 
-    while (length < state_half_length(state)) {
-      // renormalization
-      t++;
-      V = modulo_precision(state, 2 * V) + get_bit_value(in, t);
-      length = modulo_precision(state, 2 * length);
+  }
+
+}
+
+
+void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range) 
+{
+  int i;
+  int update_count = 0;
+
+  // reseting count
+  for (i = 0; i < 256; i++) state->prob_table[i] = 1;
+  
+  // encoding each character
+  for (i = 0; i < size; ++i) {
+    unsigned char input_char = in[i];
+    encode_character(out, input_char, state);
+    // updating prob
+    state->prob_table[input_char]++;
+    update_count++;
+
+    // updating cumul table
+    if (update_count >= update_range) {
+      transform_count_to_cumul(state, update_count);
+      display_prob_table(state);
+      assert(0);
+      update_count = 0;
+      // reseting count
+      for (i = 0; i < 256; i++) state->prob_table[i] = 1;
     }
-    //DISPLAY_VALUE("new V", state, V);
-    //DISPLAY_VALUE("length", state, length);
+  }
+
+  // code value selection (flushing buffer)
+
+  int base = state->base;
+  int new_base = modulo_precision(state, state->base + state_half_length(state) / 2);
+  int new_length = (1 << (state->frac_size - 2)) - 1;
+  if (base > new_base) propagate_carry(out, state);
+
+  // renormalization (output two symbols)
+  while (new_length < state_half_length(state)) {
+    int digit = (new_base * 2) >> state->frac_size;
+    output_digit(out, state, digit);
+    new_length = modulo_precision(state, 2 * new_length);
+    new_base   = modulo_precision(state, 2 * new_base);
+  }
+}
+
+void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range) 
+{
+  int update_count = 0;
+  int length = (1 << state->frac_size) - 1;
+  int V = 0;
+  int k, l;
+  for (k = 0; k < state->frac_size; k++) {
+    V |= get_bit_value(in, k) << (state->frac_size - 1 - k);
+  }
+  
+  // int V = (in[0] << 8) | in[1];
+
+  // reseting count
+  int i;
+  for (i = 0; i < 256; i++) state->prob_table[i] = 1;
+
+  int t = state->frac_size - 1;
+  DISPLAY_VALUE("init V", state, V);
+  DISPLAY_VALUE("init length", state, length);
+
+  state->out_index = t;
+  state->base      = V;
+  state->length    = length;
+
+  for (i = 0; i < expected_size; ++i) {
+    // printf("decoded %d/%c\n", s, s);
+    unsigned char decoded_char = decode_character(in, state);
+    *(out++) = decoded_char; 
+
+    // updating prob
+    state->prob_table[decoded_char]++;
+    update_count++;
+
+    // updating cumul table
+    if (update_count >= update_range) {
+      transform_count_to_cumul(state, update_count);
+      update_count = 0;
+      // reseting count
+      for (i = 0; i < 256; i++) state->prob_table[i] = 1;
+    }
+
   }
 
 }

@@ -45,14 +45,13 @@ int main(int argc, char** argv) {
   //build_probability_table(&encoder_state, reference, sizeof(reference));
 
   // encoding read buffer
-  printf("encoding\n");
   //encode_value(encoded_buffer, read_buffer, read_size, &encoder_state); 
   encode_value_with_update(encoded_buffer, read_buffer, read_size, &encoder_state, update_range); 
 
   size_t encoded_size = (encoder_state.out_index + 7) / 8;
 
   // decoding buffer 
-  printf("decoding\n");
+  reset_uniform_probability(&encoder_state);
   //decode_value(decoded_buffer, encoded_buffer, &encoder_state, read_size);
   decode_value_with_update(decoded_buffer, encoded_buffer, &encoder_state, read_size, update_range);
 

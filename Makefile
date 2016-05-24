@@ -10,4 +10,7 @@ test: test_basic
 encoder: lib/arith_coding.o util/encoder.o
 	$(CC) $(CFLAGS) -o $@ $^
 
+clean:
+	rm -f lib/*.o util/*.o ./test_basic ./encoder
+
 .PHONY: test

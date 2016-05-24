@@ -54,7 +54,6 @@ void build_probability_table(ac_state_t* state, unsigned char* in, int size)
 
   // normalization according to state format
   transform_count_to_cumul(state, count_weight * size);
-  display_prob_table(state);
 
 }
 
@@ -229,9 +228,9 @@ unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t
 
   assert(new_base > 0 && new_length > 0 && "intermediary values must be positive");
 
-  printf("pre propagate_carry and renormalization\n");
-  DISPLAY_VALUE("  base", state, new_base);
-  DISPLAY_VALUE("  length", state, new_length);
+  //printf("pre propagate_carry and renormalization\n");
+  //DISPLAY_VALUE("  base", state, new_base);
+  //DISPLAY_VALUE("  length", state, new_length);
 
   if (new_base < state->base) {
     // propagate carry
@@ -326,12 +325,10 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
   for (k = 0; k < state->frac_size; k++) {
     V |= get_bit_value(in, k) << (state->frac_size - 1 - k);
   }
-  
-  // int V = (in[0] << 8) | in[1];
 
   int t = state->frac_size - 1;
-  DISPLAY_VALUE("init V", state, V);
-  DISPLAY_VALUE("init length", state, length);
+  //DISPLAY_VALUE("init V", state, V);
+  //DISPLAY_VALUE("init length", state, length);
 
   state->out_index = t;
   state->base      = V;
@@ -339,7 +336,6 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
 
   int i;
   for (i = 0; i < expected_size; ++i) {
-    // printf("decoded %d/%c\n", s, s);
     *(out++) = decode_character(in, state);
 
   }
@@ -366,11 +362,10 @@ void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size
     // updating cumul table
     if (update_count >= update_range) {
       transform_count_to_cumul(state, update_count);
-      display_prob_table(state);
-      assert(0);
       update_count = 0;
       // reseting count
-      for (i = 0; i < 256; i++) state->prob_table[i] = 1;
+      int j;
+      for (j = 0; j < 256; j++) state->prob_table[j] = 1;
     }
   }
 
@@ -407,8 +402,8 @@ void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t*
   for (i = 0; i < 256; i++) state->prob_table[i] = 1;
 
   int t = state->frac_size - 1;
-  DISPLAY_VALUE("init V", state, V);
-  DISPLAY_VALUE("init length", state, length);
+  //DISPLAY_VALUE("init V", state, V);
+  //DISPLAY_VALUE("init length", state, length);
 
   state->out_index = t;
   state->base      = V;
@@ -428,7 +423,8 @@ void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t*
       transform_count_to_cumul(state, update_count);
       update_count = 0;
       // reseting count
-      for (i = 0; i < 256; i++) state->prob_table[i] = 1;
+      int j;
+      for (j = 0; j < 256; j++) state->prob_table[j] = 1;
     }
 
   }

@@ -63,5 +63,25 @@ void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t
  *  expected_size characters should be decoded, writting them to @p out
  */
 void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size); 
-void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range); 
-void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range);
+
+/** Arihtmetic coding of a byte-array with regular update to the probability
+ *  table (initialized to uniform probabilities)
+ *  @param out byte-array used as output stream for the numerical code value
+ *  @param in input byte-array
+ *  @param size number of bytes in @p in
+ *  @param state arithmetic coder state (parameter + internal state)
+ *  @param update_range number of input byte encoded between cumulative probability update
+ *  @param range_clear enable(1) / disable(0) the clear of probability count when updating cumulative table
+ */
+void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range, int range_clear); 
+
+/** Arihtmetic coding of a byte-array with regular update to the probability
+ *  table (initialized to uniform probabilities)
+ *  @param out byte-array used as output stream 
+ *  @param in input byte-array containing the numerical code value
+ *  @param size number of bytes expected to be decoded in @p in
+ *  @param state arithmetic coder state (parameter + internal state)
+ *  @param update_range number of input byte encoded between cumulative probability update
+ *  @param range_clear enable(1) / disable(0) the clear of probability count when updating cumulative table
+ */
+void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range, int range_clear);

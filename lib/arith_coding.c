@@ -30,14 +30,14 @@ void transform_count_to_cumul(ac_state_t* state, int size) {
 
   for (i = 0; i < 256; ++i) {
     int count = state->prob_table[i];
-    state->prob_table[i] = ((long long) count * (1 << state->frac_size)) / (size + alphabet_size);
+    int local_prob = ((long long) count * (1 << state->frac_size)) / (size + alphabet_size);
     //if (i == 0) state->cumul_table[0] = state->prob_table[0];
     //else state->cumul_table[i] = state->cumul_table[i-1] + state->prob_table[i];
     if (i == 0) {
       state->cumul_table[0] = 0;
-      state->cumul_table[1] = state->prob_table[0];
+      state->cumul_table[1] = local_prob;
     }
-    else state->cumul_table[i+1] = state->cumul_table[i] + state->prob_table[i];
+    else state->cumul_table[i+1] = state->cumul_table[i] + local_prob;
   }
 }
 
@@ -343,7 +343,7 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
 }
 
 
-void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range) 
+void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range, int range_clear) 
 {
   int i;
   int update_count = 0;
@@ -362,10 +362,12 @@ void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size
     // updating cumul table
     if (update_count >= update_range) {
       transform_count_to_cumul(state, update_count);
-      update_count = 0;
       // reseting count
-      int j;
-      for (j = 0; j < 256; j++) state->prob_table[j] = 1;
+      if (range_clear) {
+        update_count = 0;
+        int j;
+        for (j = 0; j < 256; j++) state->prob_table[j] = 1;
+      }
     }
   }
 
@@ -385,7 +387,7 @@ void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size
   }
 }
 
-void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range) 
+void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range, int range_clear) 
 {
   int update_count = 0;
   int length = (1 << state->frac_size) - 1;
@@ -421,10 +423,12 @@ void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t*
     // updating cumul table
     if (update_count >= update_range) {
       transform_count_to_cumul(state, update_count);
-      update_count = 0;
       // reseting count
-      int j;
-      for (j = 0; j < 256; j++) state->prob_table[j] = 1;
+      if (range_clear) {
+        update_count = 0;
+        int j;
+        for (j = 0; j < 256; j++) state->prob_table[j] = 1;
+      };
     }
 
   }

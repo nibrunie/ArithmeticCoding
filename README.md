@@ -12,6 +12,10 @@ The first implementation has been inspired (a lot) by the excellent Introduction
 
 To try this code, just do *make test*
 
+## Encode/Decode with update ##
+
+In those functions, rather than using a statically initialized probability table, the coder/decoded uses a dynamic table which is updated according to the occurence count of symbols encountered during encoding/decoding. The encode and decode function MUST be called with identical update parameters (*update_range* and *range_clear*) to be functionnal.
+
 
 # References
 [1] Said, Amir. "Introduction to arithmetic coding-theory and practice." Hewlett Packard Laboratories Report (2004).

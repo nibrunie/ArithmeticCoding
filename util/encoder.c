@@ -46,14 +46,14 @@ int main(int argc, char** argv) {
 
   // encoding read buffer
   //encode_value(encoded_buffer, read_buffer, read_size, &encoder_state); 
-  encode_value_with_update(encoded_buffer, read_buffer, read_size, &encoder_state, update_range); 
+  encode_value_with_update(encoded_buffer, read_buffer, read_size, &encoder_state, update_range, 0 /* range clear */); 
 
   size_t encoded_size = (encoder_state.out_index + 7) / 8;
 
   // decoding buffer 
   reset_uniform_probability(&encoder_state);
   //decode_value(decoded_buffer, encoded_buffer, &encoder_state, read_size);
-  decode_value_with_update(decoded_buffer, encoded_buffer, &encoder_state, read_size, update_range);
+  decode_value_with_update(decoded_buffer, encoded_buffer, &encoder_state, read_size, update_range, 0/* range clear */);
 
   if (memcmp(decoded_buffer, read_buffer, read_size)) {
     printf("Failure encoded and decoded buffer mismatch\n");

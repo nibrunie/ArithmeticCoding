@@ -1,5 +1,10 @@
 #pragma once
 
+/** \defgroup airht_coding arithmetic coding
+ *  \brief Arithmetic coding encoding and decoding functions
+ *   @{
+ */
+
 /** Arithmetic Coding state structure */
 typedef struct 
 {
@@ -18,9 +23,6 @@ typedef struct
 
   /** current symbol */
   unsigned char current_symbol;
-  int current_index;
-
-  int out_index;
 
   /** encoding range base value */
   int base;
@@ -79,9 +81,11 @@ void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size
  *  table (initialized to uniform probabilities)
  *  @param out byte-array used as output stream 
  *  @param in input byte-array containing the numerical code value
- *  @param size number of bytes expected to be decoded in @p in
+ *  @param expected_size number of bytes expected to be decoded in @p in
  *  @param state arithmetic coder state (parameter + internal state)
  *  @param update_range number of input byte encoded between cumulative probability update
  *  @param range_clear enable(1) / disable(0) the clear of probability count when updating cumulative table
  */
 void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size, int update_range, int range_clear);
+
+/** @} */

@@ -18,6 +18,12 @@ typedef struct
   /** one-chain counter */
   int one_counter;
 
+  /** deprecated index */
+  int current_index;
+
+  /** position of the next bit to be outputed */
+  int out_index;
+
   /** last encoded symbol */
   int last_symbol;
 

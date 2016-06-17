@@ -203,12 +203,6 @@ int modulo_precision(ac_state_t* state, int value)
   return value % (1 << state->frac_size);
 }
 
-/** Arithmetic Coding of one byte 
- *  @p out byte array to be used as output stream
- *  @p in  byte to be coded
- *  @p state Arithmetic Coder state
- *  @return unused
- */
 unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state) 
 {
   int in_cumul   = state->cumul_table[in];
@@ -294,15 +288,9 @@ unsigned char decode_character( unsigned char* in, ac_state_t* state)
   return s;
 }
 
-void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state) 
+void select_value(unsigned char* out, ac_state_t* state) 
 {
-  int i;
-  
-  // encoding each character
-  for (i = 0; i < size; ++i) encode_character(out, in[i], state);
-
   // code value selection (flushing buffer)
-
   int base = state->base;
   int new_base = modulo_precision(state, state->base + state_half_length(state) / 2);
   int new_length = (1 << (state->frac_size - 2)) - 1;
@@ -317,7 +305,17 @@ void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t
   }
 }
 
-void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size) 
+void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state) 
+{
+  int i;
+  
+  // encoding each character
+  for (i = 0; i < size; ++i) encode_character(out, in[i], state);
+
+  select_value(out, state);
+}
+
+void init_decoding(unsigned char* in, ac_state_t* state)
 {
   int length = (1 << state->frac_size) - 1;
   int V = 0;
@@ -333,6 +331,11 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
   state->out_index = t;
   state->base      = V;
   state->length    = length;
+}
+
+void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size_t expected_size) 
+{
+  init_decoding(in, state);
 
   int i;
   for (i = 0; i < expected_size; ++i) {
@@ -341,7 +344,6 @@ void decode_value(unsigned char* out, unsigned char* in, ac_state_t* state, size
   }
 
 }
-
 
 void encode_value_with_update(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state, int update_range, int range_clear) 
 {

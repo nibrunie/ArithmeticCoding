@@ -67,6 +67,34 @@ void display_prob_table(ac_state_t* state);
  */
 void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state); 
 
+/** Arithmetic Coding of one byte 
+ *  @p out byte array to be used as output stream
+ *  @p in  byte to be coded
+ *  @p state Arithmetic Coder state
+ *  @return unused
+ */
+unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state); 
+
+/** Select a final numerical value to terminate encoding
+ *  (flushing internal state)
+ *  @param out output stream
+ *  @param state internal arithmetic encoding state
+ */
+void select_value(unsigned char* out, ac_state_t* state); 
+
+/** Initialize arithmetic coding state to decode @p in
+ *  @param in input value buffer
+ *  @param internal arithmetic decoding state to be initialized
+ */
+void init_decoding(unsigned char* in, ac_state_t* state);
+
+/** Decode a single character (byte) from the input buffer
+ *  @param in input buffer (numerical encoded value)
+ *  @param state arithmetic decoding internal state
+ *  @return decoded byte value
+ */
+unsigned char decode_character( unsigned char* in, ac_state_t* state); 
+
 /** Arithmetic decode the value in @p in according to the encoder defined by @p state, assuming @p 
  *  expected_size characters should be decoded, writting them to @p out
  */

@@ -4,7 +4,8 @@
 
 #include "arith_coding.h"
 
-void init_state(ac_state_t* state, int precision) {
+void init_state(ac_state_t* state, int precision) 
+{
   state->prob_table = malloc(sizeof(int) * 256);
   state->cumul_table = malloc(sizeof(int) * 257);
 
@@ -21,7 +22,7 @@ void init_state(ac_state_t* state, int precision) {
   state->base = 0;
   state->length = (1 << precision) - 1;
 
-  assert(state->prob_table && state->cumul_table && "memeory allocation failed");
+  assert(state->prob_table && state->cumul_table && "memory allocation failed");
 }
 
 void transform_count_to_cumul(ac_state_t* state, int size) {

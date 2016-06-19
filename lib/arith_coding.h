@@ -56,6 +56,22 @@ void build_probability_table(ac_state_t* state, unsigned char* in, int size);
  */
 void reset_uniform_probability(ac_state_t* state);
 
+/** transform occurency count (in prob_table) to cumulative probability 
+ *  distribution, assuming the sum of occurences is equal to 
+ *  size + alphabet_size (where alphabet_size stands for the initial
+ *  count of 1 for each alphabet symbol)
+ *  @param state internal arithmetic coding state
+ *  @param size number of occurences (+ alphabet_size) to account for
+ */
+void transform_count_to_cumul(ac_state_t* state, int size); 
+
+/** Reset the probability table (to be used as count table)
+ *  so it contains a count equal to 1 for each entry (minimal possible
+ *  value)
+ *  @param state internal encoding state
+ */
+void reset_prob_table(ac_state_t* state);
+
 /** Display the probability table of @p state */
 void display_prob_table(ac_state_t* state); 
 

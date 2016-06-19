@@ -25,7 +25,8 @@ void init_state(ac_state_t* state, int precision)
   assert(state->prob_table && state->cumul_table && "memory allocation failed");
 }
 
-void transform_count_to_cumul(ac_state_t* state, int size) {
+void transform_count_to_cumul(ac_state_t* state, int size) 
+{
   int alphabet_size = 256;
   int i;
 
@@ -75,6 +76,12 @@ void reset_uniform_probability(ac_state_t* state)
     }
     else state->cumul_table[i+1] = state->cumul_table[i] + state->prob_table[i];
   }
+}
+
+void reset_prob_table(ac_state_t* state)
+{
+  int i;
+  for (i = 0; i < 256; ++i) state->prob_table[i] = 1;
 }
 
 void display_prob_table(ac_state_t* state) 

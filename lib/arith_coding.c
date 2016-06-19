@@ -221,7 +221,7 @@ unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t
   int new_base   = modulo_precision(state, state->base + base_increment);
   int new_length = Y - base_increment;
 
-  assert(new_base > 0 && new_length > 0 && "intermediary values must be positive");
+  assert(new_base >= 0 && new_length > 0 && "intermediary values must be positive");
 
   //printf("pre propagate_carry and renormalization\n");
   //DISPLAY_VALUE("  base", state, new_base);

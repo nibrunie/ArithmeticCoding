@@ -11,42 +11,95 @@ const unsigned char input[] = "A reference work is a book or periodical (or its 
 
 int main(void) 
 {
-  size_t  output_size = 10000;
-  unsigned char* output = malloc(sizeof(unsigned char) * output_size);
-  unsigned char* decomp = malloc(sizeof(unsigned char) * output_size);
-  ac_state_t encoder_state;
+  {
+    size_t  output_size = 10000;
+    unsigned char* output = malloc(sizeof(unsigned char) * output_size);
+    unsigned char* decomp = malloc(sizeof(unsigned char) * output_size);
+    ac_state_t encoder_state;
 
-  // initializing encoding state
-  init_state(&encoder_state, 16);
+    // initializing encoding state
+    init_state(&encoder_state, 16);
 
-  // building probability table from reference
-  build_probability_table(&encoder_state, reference, sizeof(reference));
+    // building probability table from reference
+    build_probability_table(&encoder_state, reference, sizeof(reference));
 
-  display_prob_table(&encoder_state);
+    //display_prob_table(&encoder_state);
 
-  printf("sizeof(reference) =%d\n", sizeof(reference));
-  printf("sizeof(input)     =%d\n", sizeof(input));
+    printf("sizeof(reference) =%d\n", sizeof(reference));
+    printf("sizeof(input)     =%d\n", sizeof(input));
 
-  // computing arithmetic coding of input
-  printf("encoding\n");
-  encode_value(output, input, sizeof(input), &encoder_state);
+    // computing arithmetic coding of input
+    printf("encoding\n");
+    encode_value(output, input, sizeof(input), &encoder_state);
 
-  int compressed_size = (encoder_state.out_index + 7) / 8;
-  double ratio = compressed_size / (double) sizeof(input);
+    int compressed_size = (encoder_state.out_index + 7) / 8;
+    double ratio = compressed_size / (double) sizeof(input);
 
-  printf("compression ration is%.3f%\n", ratio * 100.0);
+    printf("compression ratio is %.3f%\n", ratio * 100.0);
 
-  printf("exit out_index=%d\n", encoder_state.out_index);
+    printf("exit out_index=%d\n", encoder_state.out_index);
 
 
-  printf("decoding\n");
-  decode_value(decomp, output, &encoder_state, sizeof(input));
+    printf("decoding\n");
+    decode_value(decomp, output, &encoder_state, sizeof(input));
 
-  if (memcmp(decomp, reference, sizeof(reference))) {
-    printf("failure: reference/decomp do not match\n");
-    return 1;
-  } else {
-    printf("success\n");
+    if (memcmp(decomp, reference, sizeof(reference))) {
+      printf("failure: reference/decomp do not match\n");
+      return 1;
+    } else {
+      printf("success\n");
+    }
+  }
+
+  // Random generated test
+  const int test_size[] = {128, 256, 65536, 1 << 18, 1 << 20};
+  int i;
+  for (i = 0; i < 5; ++i) {
+    int local_size = test_size[i];
+
+    size_t  output_size = local_size + 1024;
+    unsigned char* input  = malloc(sizeof(unsigned char) * local_size);
+    unsigned char* output = malloc(sizeof(unsigned char) * output_size);
+    unsigned char* decomp = malloc(sizeof(unsigned char) * output_size);
+    ac_state_t encoder_state;
+
+    printf("testing AC on an almost uniform buffer of %d Bytes\n", local_size);
+
+    // initializing test data
+    int j;
+    for (j = 0; j < local_size; ++j) input[j] = 0x2a + rand() % 16;
+
+    // initializing encoding state
+    init_state(&encoder_state, 16);
+
+    // building probability table from reference
+    build_probability_table(&encoder_state, input, 128);
+
+    //display_prob_table(&encoder_state);
+
+    // computing arithmetic coding of input
+    printf("encoding\n");
+    encode_value(output, input, local_size, &encoder_state);
+
+    int compressed_size = (encoder_state.out_index + 7) / 8;
+    double ratio = compressed_size / (double) local_size;
+
+    printf("compression ratio is %.3f%\n", ratio * 100.0);
+
+    printf("exit out_index=%d\n", encoder_state.out_index);
+
+
+    printf("decoding\n");
+    decode_value(decomp, output, &encoder_state, local_size);
+
+    if (memcmp(decomp, input, local_size)) {
+      printf("failure: reference/decomp do not match\n");
+      for (j = 0; j < local_size && decomp[j] == input[j]; ++j);
+      printf("mismatch @ index %d, %x vs %x (expected) \n", j, decomp[j], input[j]);
+      return 1;
+    } else {
+      printf("success\n");
+    }
   }
 
 

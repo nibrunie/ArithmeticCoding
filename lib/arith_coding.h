@@ -89,7 +89,7 @@ void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t
  *  @p state Arithmetic Coder state
  *  @return unused
  */
-unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state); 
+void encode_character(unsigned char* out, unsigned char in, ac_state_t* state); 
 
 /** Select a final numerical value to terminate encoding
  *  (flushing internal state)

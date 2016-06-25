@@ -1,8 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "arith_coding.h"
+
+#ifndef DEBUG
+#define DEBUG_PRINTF
+#define DISPLAY_VALUE
+#else
+#define DEBUG_PRINTF printf
+#define DISPLAY_VALUE(name, state, value) {\
+  printf(name "= %.6f\n", (value) / (double) (1 << (state)->frac_size));\
+}
+#endif
+
 
 void init_state(ac_state_t* state, int precision) 
 {
@@ -25,28 +37,30 @@ void init_state(ac_state_t* state, int precision)
   assert(state->prob_table && state->cumul_table && "memory allocation failed");
 }
 
-void transform_count_to_cumul(ac_state_t* state, int size) 
+void transform_count_to_cumul(ac_state_t* state, int _)  
 {
-  int alphabet_size = 256;
   int i;
+  int size = 0;
+  for (i = 0; i < 256; ++i) size += state->prob_table[i];
+  int alphabet_size = 256;
 
   for (i = 0; i < 256; ++i) {
     int count = state->prob_table[i];
-    int local_prob = ((long long) count * (1 << state->frac_size)) / (size + alphabet_size);
+    int local_prob = ((long long) count * ((1 << state->frac_size)-258)) / (size);
     //if (i == 0) state->cumul_table[0] = state->prob_table[0];
     //else state->cumul_table[i] = state->cumul_table[i-1] + state->prob_table[i];
     if (i == 0) {
       state->cumul_table[0] = 0;
-      state->cumul_table[1] = local_prob;
     }
-    else state->cumul_table[i+1] = state->cumul_table[i] + local_prob;
+    state->cumul_table[i+1] = state->cumul_table[i] + local_prob;
   }
+  state->cumul_table[256] = ((long long) 1 << state->frac_size) - 1;
 }
 
 void build_probability_table(ac_state_t* state, unsigned char* in, int size) 
 {
   int alphabet_size = 256;
-  int count_weight = 16;
+  int count_weight = 1;
   int i;
   // reset 
   for (i = 0; i < 256; ++i) state->prob_table[i] = 1;
@@ -87,10 +101,12 @@ void reset_prob_table(ac_state_t* state)
 void display_prob_table(ac_state_t* state) 
 {
   int i;
-  double norm = (double) (1 << state->frac_size);
+  double norm = (double) ((1 << state->frac_size));
   for (i = 0; i < 256; i++) {
-    printf("P[%i]=%.6f, C[%i]=%.6f\n", i, state->prob_table[i] / norm, i, state->cumul_table[i] / norm); 
+    printf("P[%i]=%.6f, C[%i/%x]=%.6f / %x\n", i, state->prob_table[i] / norm, i, i, state->cumul_table[i] / norm, state->cumul_table[i]); 
   }
+  i = 256;
+  printf("P[%i]=%.6f, C[%i/%02x]=%.6f / %x\n", i, 0.0, i, i, state->cumul_table[i] / norm, state->cumul_table[i]); 
 }
 
 /** Set the bit of index @p index in @p out to the value @p bit_value */
@@ -156,14 +172,10 @@ unsigned char* output_digit(unsigned char* out, ac_state_t* state, int digit)
     output_one(out, state);
     break;
   default:
-    printf("unexpected digit=%d\n", digit);
+    DEBUG_PRINTF("unexpected digit=%d\n", digit);
     assert(0 && "unexpected digit value in output_digit\n");
     break;
   }
-}
-
-#define DISPLAY_VALUE(name, state, value) {\
-  printf(name "= %.3f\n", (value) / (double) (1 << (state)->frac_size));\
 }
 
 /** Display a byte array as a bit string
@@ -172,10 +184,12 @@ unsigned char* output_digit(unsigned char* out, ac_state_t* state, int digit)
  */
 void display_bin(unsigned char* out, int bit_size) 
 {
+#ifdef DEBUG
   int i;
-  printf("bin_value=0.");
-  for (i = 0; i < bit_size; ++i) printf("%01d", get_bit_value(out, i));
-  printf("\n");
+  DEBUG_PRINTF("bin_value=0.");
+  for (i = 0; i < bit_size; ++i) DEBUG_PRINTF("%01d", get_bit_value(out, i));
+  DEBUG_PRINTF("\n");
+#endif
 }
 
 /** Process the step of carry propagation without an AC output stream
@@ -211,32 +225,21 @@ int modulo_precision(ac_state_t* state, int value)
   return value % (1 << state->frac_size);
 }
 
-unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t* state) 
+void encode_character(unsigned char* out, unsigned char in, ac_state_t* state) 
 {
   int in_cumul   = state->cumul_table[in];
-
-  // DISPLAY_VALUE("begin base", state, state->base);
-  // DISPLAY_VALUE("begin length", state, state->length);
 
   // interval update
   int Y = ((long long) state->length * state->cumul_table[in + 1]) >> state->frac_size;
   int base_increment = ((long long) state->length * in_cumul) >> state->frac_size;
-
-  // DISPLAY_VALUE("Y", state, Y);
-  // DISPLAY_VALUE("base_increment", state, base_increment);
 
   int new_base   = modulo_precision(state, state->base + base_increment);
   int new_length = Y - base_increment;
 
   assert(new_base >= 0 && new_length > 0 && "intermediary values must be positive");
 
-  //printf("pre propagate_carry and renormalization\n");
-  //DISPLAY_VALUE("  base", state, new_base);
-  //DISPLAY_VALUE("  length", state, new_length);
-
   if (new_base < state->base) {
     // propagate carry
-    // printf("propagating carry\n");
     propagate_carry(out, state);
   }
 
@@ -252,9 +255,6 @@ unsigned char* encode_character(unsigned char* out, unsigned char in, ac_state_t
   state->base   = new_base;
   state->length = new_length;
 
-  //DISPLAY_VALUE("end base", state, state->base);
-  //DISPLAY_VALUE("end length", state, state->length);
-  //display_bin(out, state->out_index);
 }
 
 unsigned char decode_character( unsigned char* in, ac_state_t* state) 
@@ -265,11 +265,10 @@ unsigned char decode_character( unsigned char* in, ac_state_t* state)
   int t      = state->out_index;
 
   // interval selection
-  int s = 0, n = 256, X = 0, Y = length;
+  int s = 0, n = 256, X = 0, Y = ((long long) length * state->cumul_table[256]) >> state->frac_size;
   while (n - s > 1) {
     int m = (s + n) / 2;
     int Z = ((long long) length * state->cumul_table[m]) >> state->frac_size;
-    //DISPLAY_VALUE("  Z", state, Z);
 
     if (Z > V) { n = m; Y = Z;}
     else { s = m; X = Z;};
@@ -277,16 +276,12 @@ unsigned char decode_character( unsigned char* in, ac_state_t* state)
   V = V - X;
   length = Y - X;
 
-  // printf("decoded %d/%c\n", s, s);
-
   while (length < state_half_length(state)) {
     // renormalization
     t++;
     V = modulo_precision(state, 2 * V) + get_bit_value(in, t);
     length = modulo_precision(state, 2 * length);
   }
-  //DISPLAY_VALUE("new V", state, V);
-  //DISPLAY_VALUE("length", state, length);
 
   //output
   state->length    = length;
@@ -333,8 +328,6 @@ void init_decoding(unsigned char* in, ac_state_t* state)
   }
 
   int t = state->frac_size - 1;
-  //DISPLAY_VALUE("init V", state, V);
-  //DISPLAY_VALUE("init length", state, length);
 
   state->out_index = t;
   state->base      = V;
@@ -414,15 +407,12 @@ void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t*
   for (i = 0; i < 256; i++) state->prob_table[i] = 1;
 
   int t = state->frac_size - 1;
-  //DISPLAY_VALUE("init V", state, V);
-  //DISPLAY_VALUE("init length", state, length);
 
   state->out_index = t;
   state->base      = V;
   state->length    = length;
 
   for (i = 0; i < expected_size; ++i) {
-    // printf("decoded %d/%c\n", s, s);
     unsigned char decoded_char = decode_character(in, state);
     *(out++) = decoded_char; 
 

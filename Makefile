@@ -1,5 +1,5 @@
 
-CFLAGS += -g -Ilib
+CFLAGS += -O3 -g -Ilib
 
 test_basic: lib/arith_coding.o test/test_basic.o
 	$(CC) $(CFLAGS) -o $@ $^
@@ -19,4 +19,4 @@ doc:
 clean:
 	rm -f lib/*.o util/*.o ./test_basic ./encoder
 
-.PHONY: test lib
+.PHONY: test lib doc

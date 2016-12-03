@@ -1,4 +1,4 @@
-# ArithmeticCoding
+# ArithmeticCoding ![build status](https://travis-ci.org/nibrunie/PhotonHash.svg?branch=master)
 simple implementation to learn basis of arithmetic coding
 
 # A word on arithmetic coding

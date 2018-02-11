@@ -6,10 +6,10 @@
 #include "arith_coding.h"
 
 #ifndef DEBUG
-#define DEBUG_PRINTF
+#define DEBUG_PRINTF(...)
 #define DISPLAY_VALUE
 #else
-#define DEBUG_PRINTF printf
+#define DEBUG_PRINTF(...) printf(__VAARGS__)
 #define DISPLAY_VALUE(name, state, value) {\
   printf(name "= %.6f\n", (value) / (double) (1 << (state)->frac_size));\
 }
@@ -41,10 +41,10 @@ void transform_count_to_cumul(ac_state_t* state, int _)
 {
   int i;
   int size = 0;
-  for (i = 0; i < 256; ++i) size += state->prob_table[i];
   int alphabet_size = 256;
+  for (i = 0; i < alphabet_size; ++i) size += state->prob_table[i];
 
-  for (i = 0; i < 256; ++i) {
+  for (i = 0; i < alphabet_size; ++i) {
     int count = state->prob_table[i];
     int local_prob = ((long long) count * ((1 << state->frac_size)-258)) / (size);
     //if (i == 0) state->cumul_table[0] = state->prob_table[0];
@@ -63,7 +63,7 @@ void build_probability_table(ac_state_t* state, unsigned char* in, int size)
   int count_weight = 1;
   int i;
   // reset 
-  for (i = 0; i < 256; ++i) state->prob_table[i] = 1;
+  for (i = 0; i < alphabet_size; ++i) state->prob_table[i] = 1;
 
   // occurences counting
   for (i = 0; i < size; ++i) state->prob_table[in[i]] += count_weight;
@@ -162,7 +162,7 @@ unsigned char* output_one(unsigned char* out, ac_state_t* state)
  *  @p state AC structure containing the write pointer
  *  @p digit bit value to be written (should be 0 or 1 )
  */
-unsigned char* output_digit(unsigned char* out, ac_state_t* state, int digit)
+void output_digit(unsigned char* out, ac_state_t* state, int digit)
 {
   switch (digit) {
   case 0:
@@ -322,7 +322,7 @@ void init_decoding(unsigned char* in, ac_state_t* state)
 {
   int length = (1 << state->frac_size) - 1;
   int V = 0;
-  int k, l;
+  int k;
   for (k = 0; k < state->frac_size; k++) {
     V |= get_bit_value(in, k) << (state->frac_size - 1 - k);
   }
@@ -395,11 +395,10 @@ void decode_value_with_update(unsigned char* out, unsigned char* in, ac_state_t*
   int update_count = 0;
   int length = (1 << state->frac_size) - 1;
   int V = 0;
-  int k, l;
+  int k;
   for (k = 0; k < state->frac_size; k++) {
     V |= get_bit_value(in, k) << (state->frac_size - 1 - k);
   }
-  
   // int V = (in[0] << 8) | in[1];
 
   // reseting count

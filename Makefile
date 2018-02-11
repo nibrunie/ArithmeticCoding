@@ -1,5 +1,5 @@
 
-CFLAGS += -O3 -g -Ilib
+CFLAGS += -Wall -Werror --pedantic -O3 -g -Ilib
 
 test_basic: lib/arith_coding.o test/test_basic.o
 	$(CC) $(CFLAGS) -o $@ $^

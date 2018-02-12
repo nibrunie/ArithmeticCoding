@@ -57,7 +57,7 @@ void transform_count_to_cumul(ac_state_t* state, int _)
   state->cumul_table[256] = ((long long) 1 << state->frac_size) - 1;
 }
 
-void build_probability_table(ac_state_t* state, unsigned char* in, int size) 
+void build_probability_table(ac_state_t* state, const unsigned char* in, int size) 
 {
   int alphabet_size = 256;
   int count_weight = 1;
@@ -308,7 +308,7 @@ void select_value(unsigned char* out, ac_state_t* state)
   }
 }
 
-void encode_value(unsigned char* out, unsigned char* in, size_t size, ac_state_t* state) 
+void encode_value(unsigned char* out, const unsigned char* in, size_t size, ac_state_t* state) 
 {
   int i;
   

@@ -42,7 +42,7 @@ void init_state(ac_state_t* state, int precision);
  *  @p in    reference input to be used for probability init
  *  @p size  number of byte to be read from @p in
  */
-void build_probability_table(ac_state_t* state, unsigned char* in, int size);
+void build_probability_table(ac_state_t* state, const unsigned char* in, int size);
 
 /** Reset the probability table of the Arithmetic Coder state
  *  by giving equi-probable uniform probability to each byte
@@ -75,7 +75,7 @@ void display_prob_table(ac_state_t* state);
  *  @p size number of bytes in @p in
  *  @p state arithmetic coder state and parameters
  */
-void encode_value(unsigned char* out, unsigned char* in,
+void encode_value(unsigned char* out, const unsigned char* in,
                   size_t size, ac_state_t* state);
 
 /** Arithmetic Coding of one byte

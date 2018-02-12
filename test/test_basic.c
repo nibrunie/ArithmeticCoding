@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "arith_coding.h"
@@ -46,7 +47,7 @@ int main(void)
       int compressed_size = (encoder_state.out_index + 7) / 8;
       double ratio = compressed_size / (double) local_size;
 
-      printf("compression ratio is %.3f%\n", ratio * 100.0);
+      printf("compression ratio is %.3f%%\n", ratio * 100.0);
 
       printf("exit out_index=%d\n", encoder_state.out_index);
 
@@ -77,7 +78,7 @@ int main(void)
       int compressed_size = (encoder_state.out_index + 7) / 8;
       double ratio = compressed_size / (double) local_size;
 
-      printf("compression ratio is %.3f%\n", ratio * 100.0);
+      printf("compression ratio is %.3f%%\n", ratio * 100.0);
 
       printf("exit out_index=%d\n", encoder_state.out_index);
 
@@ -112,8 +113,8 @@ int main(void)
 
     //display_prob_table(&encoder_state);
 
-    printf("sizeof(reference) =%u\n", sizeof(reference));
-    printf("sizeof(input)     =%u\n", sizeof(input));
+    printf("sizeof(reference) =%zu\n", sizeof(reference));
+    printf("sizeof(input)     =%zu\n", sizeof(input));
 
     // computing arithmetic coding of input
     printf("encoding\n");
@@ -122,7 +123,7 @@ int main(void)
     int compressed_size = (encoder_state.out_index + 7) / 8;
     double ratio = compressed_size / (double) sizeof(input);
 
-    printf("compression ratio is %.3f%\n", ratio * 100.0);
+    printf("compression ratio is %.3f%%\n", ratio * 100.0);
 
     printf("exit out_index=%d\n", encoder_state.out_index);
 
